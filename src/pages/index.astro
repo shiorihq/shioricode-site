@@ -1,0 +1,204 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const workflow = [
+  ["01", "Describe.", "Say what to build or fix. The agent reads your repo, plans, and begins work."],
+  ["02", "Watch.", "Every file edit, shell command, and reasoning step streams to your screen."],
+  ["03", "Ship.", "Inspect per-turn diffs, approve, rewind to any checkpoint, then merge."],
+];
+
+const capabilities = [
+  ["Providers", "Codex · Claude · Gemini · Cursor · Kimi · Shiori"],
+  ["Sessions", "Git-checkpointed per turn"],
+  ["Streaming", "Edits, reasoning, shell output"],
+  ["Terminal", "Embedded, per-thread"],
+  ["Platforms", "macOS · Windows · Linux"],
+  ["Remote", "Managed access from any device"],
+];
+
+const downloads = [
+  ["mac-arm", "macOS", "Apple Silicon", "Latest Apple Silicon DMG"],
+  ["mac-intel", "macOS", "Intel", "Latest Intel DMG"],
+  ["windows", "Windows", "x64", "Latest Windows installer"],
+  ["linux", "Linux", "AppImage", "Latest Linux AppImage"],
+];
+---
+
+<Layout>
+  <script is:inline type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "ShioriCode",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "macOS, Windows, Linux",
+    description: "Desktop AI agent workspace with managed remote access.",
+    url: "https://shiori.codes",
+  })} />
+
+  <section class="hero">
+    <p class="eyebrow"><span>Beta</span> ShioriCode / Desktop <i>—</i> <b id="release-tag">Latest release</b></p>
+    <h1>The best way<br />to <em>code</em> with agents.</h1>
+    <p class="hero-copy">One desktop app. Every model. Codex, Claude, Gemini, Cursor, Kimi, and Shiori—running side by side in a single, <em>checkpointed</em> workspace.</p>
+    <div class="hero-actions">
+      <a id="hero-download" class="primary-button" href="https://github.com/shiorihq/ShioriCode/releases"><span>↓</span> <strong>Download for macOS</strong> <small>· Apple Silicon</small></a>
+      <a href="#platforms">Other platforms <span>↗</span></a>
+    </div>
+  </section>
+
+  <figure class="product-shot">
+    <div><img src="/shiori-code.png" alt="ShioriCode workspace with thread sidebar, live activity stream, and branch controls" /></div>
+    <figcaption><span>fig. 01 — live agent session</span><span>desktop · dark</span></figcaption>
+  </figure>
+
+  <section class="workflow section">
+    <p class="section-label">Workflow</p>
+    <div class="workflow-grid">
+      {workflow.map(([number, title, body]) => <article><span>{number}</span><h2>{title}</h2><p>{body}</p></article>)}
+    </div>
+  </section>
+
+  <section class="managed section">
+    <div>
+      <p class="section-label">ShioriCode Managed</p>
+      <h2>Your agents,<br /><em>wherever you are.</em></h2>
+    </div>
+    <div class="managed-copy">
+      <p>Securely reach the ShioriCode environment already running on your computer—without opening ports or installing a mesh VPN.</p>
+      <ul>
+        <li><span>01</span> Outbound-only encrypted connection</li>
+        <li><span>02</span> Account-scoped devices and revocation</li>
+        <li><span>03</span> Desktop, web, and mobile access</li>
+      </ul>
+      <a href="https://www.shiori.ai/chat">Open Shiori <span>↗</span></a>
+    </div>
+  </section>
+
+  <section class="spec section">
+    <div><p class="section-label">Specification</p><h2>Built for the<br /><em>way agents</em><br />actually work.</h2></div>
+    <dl>{capabilities.map(([key, value]) => <div><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
+  </section>
+
+  <section id="platforms" class="downloads section">
+    <p class="section-label">Downloads</p>
+    <h2>Get ShioriCode for <em>your</em> platform.</h2>
+    <div class="download-list">
+      {downloads.map(([target, os, arch, fallback]) => (
+        <a data-download-target={target} href="https://github.com/shiorihq/ShioriCode/releases">
+          <strong>{os}</strong><span>{arch}</span><small>{fallback}</small><b>Download ↓</b>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="final-cta section">
+    <p class="section-label">Desktop · Managed · Open source</p>
+    <h2>Start building<br />with agents, <em>today.</em></h2>
+    <div><a class="primary-button" href="#platforms">Download ShioriCode</a><a href="https://www.shiori.ai/pricing">View pricing ↗</a></div>
+  </section>
+</Layout>
+
+<script>
+  import { fetchLatestRelease, RELEASES_URL, type ReleaseAsset } from "../lib/releases";
+
+  type Target = "mac-arm" | "mac-intel" | "windows" | "linux";
+  const matches = (asset: ReleaseAsset, target: Target) => ({
+    "mac-arm": "-arm64.dmg",
+    "mac-intel": "-x64.dmg",
+    windows: "-x64.exe",
+    linux: "-x86_64.AppImage",
+  })[target] && asset.name.endsWith(({"mac-arm":"-arm64.dmg","mac-intel":"-x64.dmg",windows:"-x64.exe",linux:"-x86_64.AppImage"})[target]);
+
+  const platform = (): Target => {
+    const userAgentData = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const value = `${userAgentData.userAgentData?.platform ?? ""} ${navigator.userAgent}`.toLowerCase();
+    if (value.includes("win")) return "windows";
+    if (value.includes("linux")) return "linux";
+    return "mac-arm";
+  };
+
+  fetchLatestRelease().then((release) => {
+    const tag = document.getElementById("release-tag");
+    if (tag && release.tag_name) tag.textContent = release.tag_name;
+    document.querySelectorAll<HTMLAnchorElement>("[data-download-target]").forEach((link) => {
+      const target = link.dataset.downloadTarget as Target;
+      const asset = release.assets?.find((candidate) => matches(candidate, target));
+      if (asset) {
+        link.href = asset.browser_download_url;
+        const file = link.querySelector("small");
+        if (file) file.textContent = asset.name;
+      } else link.href = RELEASES_URL;
+    });
+    const hero = document.getElementById("hero-download") as HTMLAnchorElement | null;
+    const target = platform();
+    const asset = release.assets?.find((candidate) => matches(candidate, target));
+    if (hero) {
+      hero.href = asset?.browser_download_url ?? release.html_url ?? RELEASES_URL;
+      const label = hero.querySelector("strong");
+      const detail = hero.querySelector("small");
+      if (target === "windows") { if (label) label.textContent = "Download for Windows"; if (detail) detail.textContent = "· x64"; }
+      if (target === "linux") { if (label) label.textContent = "Download for Linux"; if (detail) detail.textContent = "· AppImage"; }
+    }
+  }).catch(() => undefined);
+</script>
+
+<style>
+  .hero { padding: 142px 0 96px; }
+  .eyebrow, .section-label { color: var(--dim); font: 10px/1.4 "DM Mono", monospace; letter-spacing: .17em; text-transform: uppercase; }
+  .eyebrow { display: flex; align-items: center; gap: 12px; }
+  .eyebrow span { border: 1px solid var(--line); padding: 3px 7px; border-radius: 2px; color: #62646a; }
+  .eyebrow i { font-style: normal; color: #c7c8ca; }
+  .eyebrow b { font-weight: 400; }
+  h1, h2, p { margin-top: 0; }
+  h1 { margin: 34px 0 32px; max-width: 900px; font-size: clamp(52px, 7vw, 84px); line-height: .99; letter-spacing: -.055em; font-weight: 600; }
+  h1 em, h2 em { font-family: "Instrument Serif", serif; font-weight: 400; }
+  .hero-copy { max-width: 540px; color: var(--muted); font-size: 15.5px; line-height: 1.7; }
+  .hero-copy em { font-family: "Instrument Serif", serif; color: var(--fg); font-size: 17px; }
+  .hero-actions { display: flex; align-items: center; gap: 28px; margin-top: 38px; font-size: 13px; }
+  .primary-button { display: inline-flex; align-items: center; gap: 9px; padding: 12px 20px; background: var(--fg); color: white; border-radius: 999px; transition: transform .2s ease, box-shadow .2s ease; }
+  .primary-button:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(16,17,22,.18); }
+  .primary-button small { color: rgba(255,255,255,.5); font: 10px "DM Mono", monospace; }
+  .product-shot { margin: 0 -20px 150px; }
+  .product-shot > div { overflow: hidden; padding: 1px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: 0 30px 80px rgba(30,34,42,.08); }
+  .product-shot img { width: 100%; border-radius: 12px; }
+  figcaption { display: flex; justify-content: space-between; margin-top: 14px; color: var(--dim); font: 10px "DM Mono", monospace; }
+  .section { padding: 132px 0; border-top: 1px solid var(--line); }
+  .workflow-grid { margin-top: 54px; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .workflow article { padding: 0 42px; border-left: 1px solid var(--line); }
+  .workflow article:first-child { padding-left: 0; border-left: 0; }
+  .workflow article > span { color: var(--accent); font: 12px "DM Mono", monospace; }
+  .workflow h2 { margin: 70px 0 20px; font-size: 30px; letter-spacing: -.04em; }
+  .workflow article p { color: var(--muted); font-size: 14px; line-height: 1.65; }
+  .managed, .spec { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; }
+  .managed { position: relative; }
+  .managed::before { content: ""; position: absolute; inset: 18% -10% 4%; z-index: -1; background: radial-gradient(circle at 65%, rgba(112,174,232,.14), transparent 56%); }
+  .managed h2, .spec h2, .downloads h2, .final-cta h2 { margin: 34px 0 0; font-size: clamp(40px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -.05em; }
+  .managed-copy > p { color: var(--muted); font-size: 17px; line-height: 1.7; }
+  .managed-copy ul { list-style: none; margin: 42px 0; padding: 0; border-top: 1px solid var(--line); }
+  .managed-copy li { padding: 18px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .managed-copy li span { display: inline-block; width: 44px; color: var(--dim); font: 10px "DM Mono", monospace; }
+  .managed-copy > a { font-size: 13px; color: var(--accent); }
+  .spec dl { margin: 0; }
+  .spec dl > div { display: grid; grid-template-columns: 120px 1fr; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .spec dt { color: var(--dim); font: 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; }
+  .spec dd { margin: 0; font-size: 13px; text-align: right; }
+  .downloads h2 { max-width: 700px; }
+  .download-list { margin-top: 64px; border-top: 1px solid var(--line); }
+  .download-list a { display: grid; grid-template-columns: 150px 160px 1fr auto; align-items: center; gap: 20px; min-height: 76px; border-bottom: 1px solid var(--line); transition: padding .25s ease, color .2s ease; }
+  .download-list a:hover { padding: 0 14px; color: var(--accent); }
+  .download-list strong { font-size: 15px; }.download-list span { color: var(--muted); font-size: 13px; }.download-list small { color: var(--dim); font: 10px "DM Mono", monospace; }.download-list b { font-size: 12px; font-weight: 500; }
+  .final-cta { text-align: center; }
+  .final-cta h2 { margin-left: auto; margin-right: auto; max-width: 760px; }
+  .final-cta > div { margin-top: 44px; display: flex; justify-content: center; align-items: center; gap: 28px; font-size: 13px; }
+  @media (max-width: 760px) {
+    .hero { padding: 100px 0 72px; }
+    .hero-actions { align-items: flex-start; flex-direction: column; gap: 18px; }
+    .product-shot { margin: 0 0 100px; }
+    .section { padding: 92px 0; }
+    .workflow-grid, .managed, .spec { grid-template-columns: 1fr; gap: 60px; }
+    .workflow article, .workflow article:first-child { padding: 30px 0; border-left: 0; border-top: 1px solid var(--line); }
+    .workflow h2 { margin-top: 30px; }
+    .download-list a { grid-template-columns: 1fr auto; padding: 18px 0; gap: 8px; }
+    .download-list small { grid-column: 1 / -1; }.download-list b { grid-column: 2; grid-row: 1; }.download-list span { text-align: right; }
+    figcaption span:last-child { display: none; }
+  }
+</style>
