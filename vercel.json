@@ -3,6 +3,12 @@
   "framework": "astro",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/shiori-code/link/:path*",
+      "destination": "https://api.link.shiori.codes/api/shiori-code/link/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -14,4 +20,3 @@
     }
   ]
 }
-
